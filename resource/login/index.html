@@ -424,6 +424,13 @@
             color: rgba(255, 255, 255, 0.5);
         }
 
+        .proxy-hint-row {
+            margin: -8px 0 16px;
+            color: rgba(255, 255, 255, 0.45);
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
         .proxy-panel-footer {
             display: flex;
             justify-content: flex-end;
@@ -966,6 +973,11 @@
                 <label for="proxyUrlInput">代理地址:</label>
                 <input type="text" id="proxyUrlInput" placeholder="https://ghfast.top" />
             </div>
+            <div class="proxy-url-row">
+                <label for="danmakuApiServerInput">弹幕源地址:</label>
+                <input type="text" id="danmakuApiServerInput" placeholder="留空则用插件默认（公共代理）" />
+            </div>
+            <div class="proxy-hint-row">填自建弹幕服务，例：http://10.0.0.2:9321/87654321 · 不要带 /api/v2，不能含逗号</div>
             <div class="proxy-switch-row">
                 <span>使用 MPV 播放</span>
                 <label class="proxy-switch">
@@ -1570,6 +1582,8 @@
             ipcRenderer.send('get-download-proxy');
             // 获取当前播放方式
             ipcRenderer.send('get-play-button-config');
+            // 获取当前弹幕源地址
+            ipcRenderer.send('get-danmaku-api-server');
         }
 
         function toggleProxyPanel() {
@@ -1593,6 +1607,9 @@
 
             // 保存播放方式
             ipcRenderer.send('set-play-button-config', { hideOriginalPlayButton });
+
+            // 保存弹幕源地址（留空即恢复插件默认）
+            ipcRenderer.send('set-danmaku-api-server', { apiServer: danmakuApiServerInput.value.trim() });
             
             // 显示保存状态
             const originalText = proxySaveBtn.textContent;
@@ -1647,6 +1664,23 @@
                 window.log.info('播放方式保存成功');
             } else {
                 window.log.error('播放方式保存失败:', data.error);
+            }
+        });
+
+        // 监听弹幕源地址读取响应
+        ipcRenderer.on('danmaku-api-server-info', (event, data) => {
+            if (data) {
+                danmakuApiServerInput.value = data.apiServer || '';
+            }
+        });
+
+        ipcRenderer.on('danmaku-api-server-set', (event, data) => {
+            if (data && data.success) {
+                window.log.info('弹幕源地址保存成功');
+            } else {
+                const reason = (data && data.error) || '未知错误';
+                window.log.error('弹幕源地址保存失败:', reason);
+                showCustomMessage('error', '弹幕源地址保存失败', reason);
             }
         });
 
